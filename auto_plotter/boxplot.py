@@ -9,23 +9,25 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from utils import DataLoader
 
 
-def create_histogram(data, xlabels, boxlabels,
-                     title=None, colors=None, hatches=None,
-                     box_width=0.2, spacing=0.5,
-                     color_map='rainbow',
-                     patterns=('----', '||||', '\\\\\\','xxxx', '..', '+++'),
-                     median_color='k', alpha=1,
-                     ):
+def create_boxplot(data, xlabels, boxlabels,
+                   title=None, colors=None, hatches=None,
+                   box_width=0.2, spacing=0.5,
+                   color_map='rainbow',
+                   patterns=('----', '||||', '\\\\\\','xxxx', '..', '+++'),
+                   median_color='k', alpha=1,
+                   ):
 
     '''
     Data format:
     - list of np arrays of size number of observations x n_groups x boxes_per_group
     - The list size must be equal to the number of plots
     '''
+
     n_plots = len(data)
-    assert isinstance(data[0], np.ndarray)
+    assert isinstance(data[0], (np.ndarray, DataLoader))
     n_groups = data[0].shape[1]
     boxes_per_group = data[0].shape[2]
     assert len(xlabels) == n_groups
@@ -120,16 +122,13 @@ def create_histogram(data, xlabels, boxlabels,
 
 
 if __name__ == '__main__':
+    from utils import DataLoader
 
-    import pandas as pd
-
-    df1 = pd.read_csv('test_data/alg1.csv')
-    df2 = pd.read_csv('test_data/alg2.csv')
-    df3 = pd.read_csv('test_data/alg3.csv')
-
-    data = np.dstack([df1, df2, df3])
     xlabels = ['dataset1', 'dataset2', 'dataset3', 'dataset4']
     boxlabels = ['alg1', 'alg2', 'alg3']
 
-    fig = create_histogram([data] * 9, xlabels, boxlabels, title=None)
+    dl = DataLoader(['test_data/alg1.csv', 'test_data/alg2.csv', 'test_data/alg3.csv'])
+
+    fig = create_boxplot([dl] * 9, xlabels, boxlabels, title=None)
     fig.savefig('resulting_plots/test_boxplot.pdf')
+
