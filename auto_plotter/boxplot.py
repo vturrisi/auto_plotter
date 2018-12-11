@@ -1,15 +1,11 @@
-import os
-import sys
 import warnings
-from collections import defaultdict
-from statistics import mean
 
 import matplotlib as mpl
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from utils import DataLoader
+from auto_plotter.utils import DataLoader
 
 
 def create_boxplot(data, xlabels, boxlabels,
@@ -119,16 +115,3 @@ def create_boxplot(data, xlabels, boxlabels,
     else:
         fig.tight_layout(rect=(0, 0.01, 1, 1))
     return fig
-
-
-if __name__ == '__main__':
-    from utils import DataLoader
-
-    xlabels = ['dataset1', 'dataset2', 'dataset3', 'dataset4']
-    boxlabels = ['alg1', 'alg2', 'alg3']
-
-    dl = DataLoader(['test_data/alg1.csv', 'test_data/alg2.csv', 'test_data/alg3.csv'])
-
-    fig = create_boxplot([dl] * 9, xlabels, boxlabels, title=None)
-    fig.savefig('resulting_plots/test_boxplot.pdf')
-
