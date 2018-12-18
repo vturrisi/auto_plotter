@@ -1,6 +1,6 @@
 # auto_plotter
 
-A simple python library to provide auto plotting with *cool looks*
+Simple auto plotting library to provide *cool looking* graphs
 
 ## Includes:
   - Utils class

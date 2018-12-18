@@ -8,19 +8,59 @@ import pandas as pd
 from auto_plotter.utils import DataLoader
 
 
+COLOR_MAPS = {'Greys': 'from white to black',
+              'rainbow': 'the colors of the rainbow',
+              'cool': 'aesthetic feeling from light blue to light purple',
+              'Spectral': 'from red to blue but simetric (zero is white)'}
+
+
 def create_boxplot(data, xlabels, boxlabels,
-                   title=None, colors=None, hatches=None,
+                   title=None,
                    box_width=0.2, spacing=0.5,
-                   color_map='rainbow',
-                   patterns=('----', '||||', '\\\\\\','xxxx', '..', '+++'),
-                   median_color='k', alpha=1,
+                   colors=None,
+                   color_map='Greys',
+                   patterns=None,
+                   patterns_map=('----', '||||', '\\\\\\','xxxx', '..', '+++'),
+                   median_color='k', alpha=1.0,
                    ):
 
     '''
-    Data format:
-    - list of np arrays of size number of observations x n_groups x boxes_per_group
-    - The list size must be equal to the number of plots
+    Creates a boxplot using the data provided
+
+    args:
+        - data (DataLoader/iterable): DataLoader object or iterable of DataLoader
+            objects containing the data for each plot
+
+        - xlabels (iterable): labels for each group of boxes
+
+        - boxlabels (iterable): labels for each box (added to legend)
+
+        - boxwidth (float): width of each box
+
+        - spacing (float): space between box groups
+
+        - colors (iterable): iterable of color names
+            (optional and has precedence over color_map)
+
+        - color_map (str): name of matplotlib color_map from matplotlib to use
+            (if colors is provided, this is ignored)
+
+        - patterns (iterable): iterable of patterns for the box hatches
+            (optional and has precedence over patterns_map)
+
+        - patterns_map (iterable): iterable of patterns to generate hatches for the boxes
+            (if patterns is provided, this is ignored)
+
+        - median_color (str): color of the median line for the boxes
+
+        - alpha (float): transparency value of the boxes
+
     '''
+
+    import collections
+
+    if not isinstance(data, collections.Iterable) or isinstance(data, DataLoader):
+        data = [data]
 
     n_plots = len(data)
     assert isinstance(data[0], (np.ndarray, DataLoader))
@@ -28,10 +68,10 @@ def create_boxplot(data, xlabels, boxlabels,
     boxes_per_group = data[0].shape[2]
     assert len(xlabels) == n_groups
 
-    if colors is None or boxes_per_group != len(colors):
+    if colors is None or len(colors) != boxes_per_group:
         msg = ('Colors not provided or number of colors '
                'and n_groups do not match, defaulting to '
-               'random colors')
+               'color map')
         warnings.warn(msg, UserWarning)
 
         import matplotlib
@@ -40,10 +80,10 @@ def create_boxplot(data, xlabels, boxlabels,
         # remove alpha from cmap
         colors = [cmap(i)[:-1] for i in np.linspace(0, 1, num=boxes_per_group)]
 
-    if hatches is None or boxes_per_group != len(colors):
-        msg = ('Hatches not provided or number of hatches '
+    if patterns is None or len(patterns) != boxes_per_group:
+        msg = ('Patterns not provided or number of patterns '
                'and n_groups do not match, defaulting to '
-               'random hatches')
+               'pattern map')
         warnings.warn(msg, UserWarning)
 
         import itertools
@@ -51,7 +91,7 @@ def create_boxplot(data, xlabels, boxlabels,
         hatches = ['']
         r = 1
         while len(hatches) < boxes_per_group:
-            for i in itertools.combinations(patterns, r):
+            for i in itertools.combinations(patterns_map, r):
                 hatches.append(''.join(i))
                 if len(hatches) == boxes_per_group:
                     break
@@ -107,11 +147,11 @@ def create_boxplot(data, xlabels, boxlabels,
                                    hatch=hatch)
         patches.append(patch)
 
-    axs[-1].legend(patches, boxlabels, loc='lower center',
-                   bbox_to_anchor=(0.5, -0.4), ncol=4, fancybox=True, fontsize=15)
+    fig.legend(patches, boxlabels, loc='lower center', ncol=4, fancybox=True, fontsize=15)
+
     if title is not None:
         fig.tight_layout(rect=(0, 0.01, 1, 0.98))
-        t = fig.suptitle(title, y=0.99)
+        fig.suptitle(title, y=0.99)
     else:
-        fig.tight_layout(rect=(0, 0.01, 1, 1))
+        fig.tight_layout(rect=(0, 0.20, 1, 1))
     return fig
