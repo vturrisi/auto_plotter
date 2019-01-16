@@ -173,7 +173,7 @@ def create_boxplot(data, xlabels, ylabels,
 
             right_lim = max(right_lim, max(positions))
 
-        ax.set_xlim(left=0, right=right_lim+space_between_groups)
+        ax.set_xlim(left=0, right=right_lim + space_between_groups)
         ax.set_xticks(x_ticks_pos)
         ax.set_ylabel(ylabel)
         plt.setp(ax.get_xticklabels(), visible=False)
