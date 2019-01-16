@@ -14,7 +14,7 @@ COLOR_MAPS = {'Greys': 'from white to black',
               'Spectral': 'from red to blue but simetric (zero is white)'}
 
 
-def create_boxplot(data, xlabels, boxlabels,
+def create_boxplot(data, xlabels, ylabels, boxlabels,
                    title=None,
                    box_width=0.2, spacing=0.5,
                    colors=None,
@@ -32,6 +32,8 @@ def create_boxplot(data, xlabels, boxlabels,
             objects containing the data for each plot
 
         - xlabels (iterable): labels for each group of boxes
+
+        - ylabels (iterable): labels for each plot
 
         - boxlabels (iterable): labels for each box (added to legend)
 
@@ -67,11 +69,15 @@ def create_boxplot(data, xlabels, boxlabels,
     n_groups = data[0].shape[1]
     boxes_per_group = data[0].shape[2]
     assert len(xlabels) == n_groups
+    assert len(ylabels) == n_plots
 
-    if colors is None or len(colors) != boxes_per_group:
-        msg = ('Colors not provided or number of colors '
-               'and n_groups do not match, defaulting to '
-               'color map')
+    msg = None
+    if colors is None:
+        msg = ('Colors not provided defaulting to color map')
+    elif len(colors) != boxes_per_group:
+        msg = ('Number of colors and n_groups do not match, '
+               'defaulting to color map')
+    if msg:
         warnings.warn(msg, UserWarning)
 
         import matplotlib
@@ -80,10 +86,14 @@ def create_boxplot(data, xlabels, boxlabels,
         # remove alpha from cmap
         colors = [cmap(i)[:-1] for i in np.linspace(0, 1, num=boxes_per_group)]
 
-    if patterns is None or len(patterns) != boxes_per_group:
-        msg = ('Patterns not provided or number of patterns '
-               'and n_groups do not match, defaulting to '
-               'pattern map')
+
+    msg = None
+    if patterns is None:
+        msg = ('Patterns not provided defaulting to color map')
+    elif len(patterns) != boxes_per_group:
+        msg = ('Number of patterns and n_groups do not match, '
+               'defaulting to pattern map')
+    if msg:
         warnings.warn(msg, UserWarning)
 
         import itertools
@@ -97,10 +107,9 @@ def create_boxplot(data, xlabels, boxlabels,
                     break
             r += 1
 
-
-    fig, axs = plt.subplots(figsize=(9, n_plots*2.5), nrows=n_plots, ncols=1)
+    fig, axes = plt.subplots(figsize=(9, n_plots*2.5), nrows=n_plots, ncols=1)
     if n_plots == 1:
-        axs = [axs]
+        axes = [axes]
 
     start_positions = [0.5 + box_width]
     for i in range(n_groups - 1):
@@ -110,7 +119,7 @@ def create_boxplot(data, xlabels, boxlabels,
 
     x_ticks_pos = [(p + box_width + 0.05) for p in start_positions]
 
-    for ax, data_ax in zip(axs, data):
+    for ax, data_ax, ylabel in zip(axes, data, ylabels):
         positions = start_positions.copy()
 
         right_lim = 0
@@ -134,11 +143,11 @@ def create_boxplot(data, xlabels, boxlabels,
 
         ax.set_xlim(left=0, right=right_lim+0.5)
         ax.set_xticks(x_ticks_pos)
-        ax.set_xticklabels(xlabels, rotation=0, fontsize=10)
+        ax.set_ylabel(ylabel)
         plt.setp(ax.get_xticklabels(), visible=False)
 
-
-    plt.setp(axs[-1].get_xticklabels(), visible=True)
+    axes[-1].set_xticklabels(xlabels, rotation=0, fontsize=10)
+    plt.setp(axes[-1].get_xticklabels(), visible=True)
 
     patches = []
     for color, hatch in zip(colors, hatches):
