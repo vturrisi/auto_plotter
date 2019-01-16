@@ -1,3 +1,4 @@
+import math
 import warnings
 
 import matplotlib as mpl
@@ -14,9 +15,11 @@ COLOR_MAPS = {'Greys': 'from white to black',
               'Spectral': 'from red to blue but simetric (zero is white)'}
 
 
-def create_boxplot(data, xlabels, ylabels, boxlabels,
+def create_boxplot(data, xlabels, ylabels,
                    title=None,
-                   box_width=0.2, spacing=0.5,
+                   box_width=0.2,
+                   space_between_boxes=0.05,
+                   space_between_groups=1.0,
                    colors=None,
                    color_map='Greys',
                    patterns=None,
@@ -35,11 +38,11 @@ def create_boxplot(data, xlabels, ylabels, boxlabels,
 
         - ylabels (iterable): labels for each plot
 
-        - boxlabels (iterable): labels for each box (added to legend)
-
         - boxwidth (float): width of each box
 
-        - spacing (float): space between box groups
+        - space_between_boxes (float): space between boxes
+
+        - space_between_groups (float): space between box groups
 
         - colors (iterable): iterable of color names
             (optional and has precedence over color_map)
@@ -66,11 +69,12 @@ def create_boxplot(data, xlabels, ylabels, boxlabels,
 
     n_plots = len(data)
     assert isinstance(data[0], (np.ndarray, DataLoader))
-    n_groups = data[0].shape[1]
-    boxes_per_group = data[0].shape[2]
-    assert len(boxlabels) == boxes_per_group
+    n_groups = data[0].n_scenarios
+
     assert len(xlabels) == n_groups
     assert len(ylabels) == n_plots
+    boxes_per_group = len(data[0].alg_names)
+    boxlabels = data[0].alg_names
 
     msg = None
     if colors is None:
@@ -108,28 +112,54 @@ def create_boxplot(data, xlabels, ylabels, boxlabels,
                     break
             r += 1
 
-    fig, axes = plt.subplots(figsize=(9, n_plots*2.5), nrows=n_plots, ncols=1)
+    fig, axes = plt.subplots(figsize=(9, n_plots*3), nrows=n_plots, ncols=1)
     if n_plots == 1:
         axes = [axes]
 
-    start_positions = [spacing + box_width]
+    # create a list of the positions of the first box of each group
+    start_positions = [space_between_groups + box_width]
     for i in range(n_groups - 1):
         last = start_positions[-1]
-        p = round(last + boxes_per_group * box_width + spacing, 2)
+        p = round(last + boxes_per_group * box_width + space_between_groups, 2)
         start_positions.append(p)
 
-    box_range = (box_width + 0.05) * boxes_per_group - 0.05 - (2 * box_width / 2)
-    x_ticks_pos = [(p + box_range / 2) for p in start_positions]
+    # creates a list with a list of positions for the first box of each group
+    # then the second box, and so on
+    box_positions = [start_positions]
+    for i in range(boxes_per_group - 1):
+        positions = box_positions[-1]
+        positions = [round(p + box_width + space_between_boxes, 2)
+                     for p in positions]
+        box_positions.append(positions)
 
-    for ax, data_ax, ylabel in zip(axes, data, ylabels):
+    # computes the xspace occupied by a box group
+    # ___   ___   ___
+    #|   | |   | |   |
+    #|___| |___| |___|
+    #
+    #|_______________|
+    #    box_range
+    #
+    # v-extra space-v
+    #--|___________|--
+    # *p* initial position
+    # (p + boxrange - extra_space)
+
+    box_range = ((box_width + space_between_boxes) * boxes_per_group
+                 - space_between_boxes)
+    extra_space = box_width
+    center = round((box_range - extra_space) / 2, 2)
+    x_ticks_pos = [p + center for p in start_positions]
+
+    for ax, dloader, ylabel in zip(axes, data, ylabels):
         positions = start_positions.copy()
 
         right_lim = 0
-        for dim, color, hatch in zip(range(data_ax.shape[2]), colors, hatches):
-            d = data_ax[:, :, dim]
-            if dim != 0:
-                positions = [round(p + box_width + 0.05, 2) for p in positions]
-
+        for alg, positions, color, hatch in zip(dloader.algorithms,
+                                                box_positions,
+                                                colors,
+                                                hatches):
+            d = dloader.get_algorithm(alg)
             bp = ax.boxplot(d, positions=positions, widths=[box_width]*n_groups,
                             patch_artist=True, sym='.')
 
@@ -158,11 +188,13 @@ def create_boxplot(data, xlabels, ylabels, boxlabels,
                                    hatch=hatch)
         patches.append(patch)
 
-    fig.legend(patches, boxlabels, loc='lower center', ncol=4, fancybox=True, fontsize=15)
+    nrows = math.ceil(len(boxlabels) / 5)
+    fig.legend(patches, boxlabels, loc='lower center', ncol=5,
+               fancybox=True, fontsize=12, bbox_to_anchor=[0, 0, 1, 1])
 
     if title is not None:
-        fig.tight_layout(rect=(0, 0.01, 1, 0.98))
+        fig.tight_layout(rect=(0, 0.1 * nrows, 1, 0.98))
         fig.suptitle(title, y=0.99)
     else:
-        fig.tight_layout(rect=(0, 0.20, 1, 1))
+        fig.tight_layout(rect=(0, 0.1 * nrows, 1, 1))
     return fig
