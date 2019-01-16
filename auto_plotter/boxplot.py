@@ -68,6 +68,7 @@ def create_boxplot(data, xlabels, ylabels, boxlabels,
     assert isinstance(data[0], (np.ndarray, DataLoader))
     n_groups = data[0].shape[1]
     boxes_per_group = data[0].shape[2]
+    assert len(boxlabels) == boxes_per_group
     assert len(xlabels) == n_groups
     assert len(ylabels) == n_plots
 
@@ -111,14 +112,15 @@ def create_boxplot(data, xlabels, ylabels, boxlabels,
     if n_plots == 1:
         axes = [axes]
 
-    start_positions = [0.5 + box_width]
+    start_positions = [spacing + box_width]
     for i in range(n_groups - 1):
         last = start_positions[-1]
         p = round(last + boxes_per_group * box_width + spacing, 2)
         start_positions.append(p)
 
-    x_ticks_pos = [(p + box_width + 0.05) for p in start_positions]
-
+    box_range = (box_width + 0.05) * boxes_per_group - 0.05 - (2 * box_width / 2)
+    x_ticks_pos = [(p + box_range / 2) for p in start_positions]
+    print('xticks', x_ticks_pos)
     for ax, data_ax, ylabel in zip(axes, data, ylabels):
         positions = start_positions.copy()
 
@@ -127,6 +129,7 @@ def create_boxplot(data, xlabels, ylabels, boxlabels,
             d = data_ax[:, :, dim]
             if dim != 0:
                 positions = [round(p + box_width + 0.05, 2) for p in positions]
+            print(positions)
 
             bp = ax.boxplot(d, positions=positions, widths=[box_width]*n_groups,
                             patch_artist=True, sym='.')
